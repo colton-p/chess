@@ -426,6 +426,7 @@ class State {
   }
 
   makeMove(moveObj) {
+    STATS.makeMove += 1;
     // must be pseudo-legal
     const {src, dst, ep, capture, epCapture, castle, promotion} = moveObj;
 
@@ -549,10 +550,18 @@ class State {
     return s;
   }
 
+  perft(depth=2) {
+    return perft(this, depth);
+  }
+
   bestMove(depth=4) {
     CCC = 0;
+    const t0 = performance.now();
     let {value, best} = abSearch(this, depth, -999, 999, this.active === WHITE, []);
+    const t1 = performance.now();
     console.log('nodes:', CCC);
+    console.log('time:', t1 - t0);
+    console.log('nodes / s:', 1000*CCC /(t1 - t0));
     let m = best[0];
     console.log(value, eeToAlgebraic(m.src), eeToAlgebraic(m.dst), m);
 
@@ -613,7 +622,7 @@ let v = State.fromStart();
 //v = State.fromFen('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8');  
 //v = State.fromFen('r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1');
 
-/*
+
 function perft(init, maxDepth) {
   let C = {captures: 0, ep: 0, checks: 0, checkmates: 0, castles: 0, promotions: 0}
   function fff(v, lastMove, maxDepth=1, depth=0) {
@@ -628,18 +637,18 @@ function perft(init, maxDepth) {
 
     const moves = v.moves();
     let t = 0;
-    moves.forEach( m => {
-      const child = v.makeMove(m);
-
-      var x = fff(child, m, maxDepth, depth+1);
+    moves.forEach( move => {
+      const child = v.makeMove(move);
+      var x = fff(child, move, maxDepth, depth+1);
       // if (depth === 0) { console.log(eeToAlgebraic(m.src), eeToAlgebraic(m.dst), x); }
       t += x;
     });
     return t;
   }
-  return [fff(v, {}, maxDepth, 0), C];
+  return [fff(init, {}, maxDepth, 0), C];
 }
 
+/*
 console.log(v);
 for(let d = 0; d <= 0; ++d) {
   const [t, c] = perft(v, d);
@@ -654,3 +663,7 @@ pv.forEach(m => {
   console.log(eeToAlgebraic(m.src), eeToAlgebraic(m.dst), m.capture);
 });
 }*/
+
+if (typeof module !== 'undefined') {
+  module.exports = { State };
+}
