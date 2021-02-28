@@ -417,8 +417,10 @@ class State {
 
     let possibleMoves = this.movesFromSquare(src);
     possibleMoves = possibleMoves.filter( m => m.src === src && m.dst === dst );
+    console.log('info', src, dst)
+    console.log('info', possibleMoves);
 
-    if (possibleMoves.length === 0) { return null; }
+    if (possibleMoves.length === 0) { console.log('info', 'uh oh', srcAlg, dstAlg); return null; }
 
     //if (possibleMoves.length > 1) { //throw new Error('????', possibleMoves); }
 
@@ -554,21 +556,28 @@ class State {
     return perft(this, depth);
   }
 
-  bestMove(depth=4) {
+  bestMove(depth=5) {
     CCC = 0;
-    const t0 = performance.now();
     let {value, best} = abSearch(this, depth, -999, 999, this.active === WHITE, []);
-    const t1 = performance.now();
-    console.log('nodes:', CCC);
-    console.log('time:', t1 - t0);
-    console.log('nodes / s:', 1000*CCC /(t1 - t0));
+    console.log('info nodes:', CCC);
     let m = best[0];
-    console.log(value, eeToAlgebraic(m.src), eeToAlgebraic(m.dst), m);
+    //console.log(value, eeToAlgebraic(m.src), eeToAlgebraic(m.dst), m);
 
-    return m, best;
+    return moveToAlgebraic(m);
+    //return m, best;
   }
 
 };
+
+function moveToAlgebraic(m){
+    const promo = {
+      0x10: 'q',
+      0x04: 'n',
+      0x02: 'b',
+      0x08: 'r',
+    };
+    return `${eeToAlgebraic(m.src)}${eeToAlgebraic(m.dst)}${promo[m.promotion & 0x3F] || ''}`;
+}
 
 var CCC = 0;
 

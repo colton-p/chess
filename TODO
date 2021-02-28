@@ -1,0 +1,18 @@
+accept/produce proper move format
+
+uci option for search depth
+uci info for nodes, eval, depth
+
+time mgmt in engine
+iterative deepening for search
+transposition table for search
+async search
+opening book
+
+clean front-end
+split up main.js
+    move gen
+    fen parsing
+
+repeated Nc3, Rb1, Ra1, Rb1 as white?
+
