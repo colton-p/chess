@@ -29,45 +29,42 @@ test('mate in 2 via under-promotion', () => {
     //expect(bestLine[2].capture).toBe(1);
 });
 
+describe('isSquareAttacked', () => {
+    test ('ok', () => {
+        const g = State.fromFen('n7/8/8/8/8/8/1p6/K6k b - - 0 1');
 
+        //console.error(g.isSquareAttacked1(0, 64));
+        expect(g.isSquareAttacked(0, 64)).toEqual(true);
+    })
+});
 
+describe('makeMoveFromAlg', () => {
+    test('e4', () => {
+        const g = State.fromStart();
+        const h = g.makeMoveFromAlg('e2e4');
 
-
-function perftSuite(name, fen, results) {
-    describe("name", () => {
-        results.forEach( ([exp, expDetails], depth) => {
-            test(`${name}: perft(${depth}) = ${exp}`, () => {
-                const [act, actDetails] = State.fromFen(fen).perft(depth);
-                expect(act).toBe(exp);
-                Object.keys(expDetails).forEach(k => {
-                    expect(actDetails[k]).toBe(expDetails[k]);
-                })
-            });
-        });
+        const exp = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 1 2';
+        expect(h.toFen()).toEqual(exp)
     });
-}
+    test('promotion', () => {
+        const init = '8/8/5k2/8/8/5K2/p7/8 b - - 0 1';
+        const g = State.fromFen(init);
+        const h = g.makeMoveFromAlg('a2a1q');
 
-perftSuite('start', 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-[
-    [1, {}],
-    [20, {}],
-    [400, {}],
-    [8902, { captures: 34 }],
-    [197281, { captures: 1576 }],
-]);
+        const exp = '8/8/5k2/8/8/5K2/8/q7 w - - 1 2';
+        expect(h.toFen()).toEqual(exp)
+    });
+    test('under-promotion', () => {
+        const init = '8/8/5k2/8/8/5K2/p7/8 b - - 0 1';
+        const g = State.fromFen(init);
+        const h = g.makeMoveFromAlg('a2a1n');
 
-perftSuite('position 4', 'r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1', 
-[
-    [1, {}],
-    [6, {}],
-    [264, {captures:87, castles:6, promotions:48, checks: 10}],
-    [9467, {captures:1021,ep:4, promotions:120, checks: 38, checkmates: 22}],
-]);
+        const exp = '8/8/5k2/8/8/5K2/8/n7 w - - 1 2';
+        expect(h.toFen()).toEqual(exp)
+    });
 
-perftSuite('position 5', 'rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8',
-[
-    [1, {}],
-    [44, {}],
-    [1486, {}],
-    [62379, {}],
-]);
+
+
+});
+
+

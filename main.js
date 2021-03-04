@@ -1,7 +1,10 @@
-function f(x, y) {
-  return 1 + y;
-}
-f();
+
+import { PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING, WHITE, BLACK, DIRS, COLORLESS_MASK } from './constants.js'
+import { FenParser, FenSerializer } from './fen_parser.js';
+import Moves from './moves.js';
+import perft from './perft.js'
+
+//import { performance } from 'perf_hooks';
 
 const handler = {
   get: function(target, name) {
@@ -11,203 +14,7 @@ const handler = {
 
 let STATS = new Proxy({}, handler);
 
-
-const PAWN = 0x01;
-const BISHOP = 0x02;
-const KNIGHT = 0x04;
-const ROOK = 0x08;
-const QUEEN = 0x10;
-const KING = 0x20;
-
-const WHITE = 0x40;
-const BLACK = 0x80;
-
-const FEN_TABLE = {
-  'r': BLACK | ROOK,
-  'n': BLACK | KNIGHT,
-  'b': BLACK | BISHOP,
-  'q': BLACK | QUEEN,
-  'k': BLACK | KING,
-  'p': BLACK | PAWN,
-  'R': WHITE | ROOK,
-  'N': WHITE | KNIGHT,
-  'B': WHITE | BISHOP,
-  'Q': WHITE | QUEEN,
-  'K': WHITE | KING,
-  'P': WHITE | PAWN,
-};
-const REV_FEN_TABLE = {};
-REV_FEN_TABLE[BLACK | ROOK] = 'r';
-REV_FEN_TABLE[BLACK | KNIGHT] = 'n';
-REV_FEN_TABLE[BLACK | BISHOP] = 'b';
-REV_FEN_TABLE[BLACK | QUEEN] = 'q';
-REV_FEN_TABLE[BLACK | KING] = 'k';
-REV_FEN_TABLE[BLACK | PAWN] = 'p';
-REV_FEN_TABLE[WHITE | ROOK] = 'R';
-REV_FEN_TABLE[WHITE | KNIGHT] = 'N';
-REV_FEN_TABLE[WHITE | BISHOP] = 'B';
-REV_FEN_TABLE[WHITE | QUEEN] = 'Q';
-REV_FEN_TABLE[WHITE | KING] = 'K';
-REV_FEN_TABLE[WHITE | PAWN] = 'P';
-
-
-class FenParser {
-  constructor(fenString) {
-    this.fenString = fenString;
-    const [piecePlacement, active, castling, epTarget, halfMoves, fullMoves] = fenString.split(' ');
-
-    this.piecePlacement = piecePlacement;
-    this.activeStr = active;
-    this.castlingStr = castling;
-    this.epTargetStr = epTarget;
-    this.halfMovesStr = halfMoves;
-    this.fullMovesStr = fullMoves;
-  }
-
-  board() {
-    const ranks = this.piecePlacement.split('/');
-
-    const board = new Array(128);
-    ranks.forEach((rankString, ix) => {
-      let rank = 7 - ix;
-      let file = 0;
-      rankString.split('').forEach((c) => {
-        if (FEN_TABLE[c]) {
-          board[rank * 16 + file] = FEN_TABLE[c];
-          file += 1;
-        } else {
-          file += parseInt(c, 10);
-        }
-      });
-    });
-
-    return board;
-  }
-
-  active() {
-    return this.activeStr  == 'w' ? WHITE : BLACK;
-  }
-
-
-  castling() {
-    // TODO
-    let c = {
-    };
-    c[WHITE] = {};
-    c[BLACK] = {};
-
-    if (this.castlingStr.includes('K')) { c[WHITE].king = true; }
-    if (this.castlingStr.includes('Q')) { c[WHITE].queen = true; }
-    if (this.castlingStr.includes('k')) { c[BLACK].king = true; }
-    if (this.castlingStr.includes('q')) { c[BLACK].queen = true; }
-
-    return c;
-  }
-
-  epTarget() {
-    if (this.epTargetStr === '-') { return null; }
-
-    const file = this.epTargetStr[0].charCodeAt() - 97;
-    const rank = parseInt(this.epTargetStr[1], 10) - 1;
-
-    return rank * 16 + file;
-  }
-
-  halfMoves() {
-    return parseInt(this.halfMovesStr, 10);
-  }
-  fullMoves() {
-    return parseInt(this.fullMovesStr, 10);
-  }
-}
-
-class FenSerializer {
-  constructor(boardObj) {
-    this.boardObj = boardObj;
-  }
-
-  piecePlacement() {
-    let fen = '';
-
-    for(let rank = 7; rank >=0; --rank) {
-      let blank = 0;
-      for (let file = 0; file <= 7; ++file) {
-        const piece = this.boardObj.board[rank * 16 + file];
-        if (piece) {
-          if (blank) { fen += blank; blank = 0; }
-          fen += REV_FEN_TABLE[piece];
-        } else {
-          blank += 1;
-        }
-      }
-      if (blank) { fen += blank; }
-      if (rank > 0) { fen += '/'; }
-    }
-
-    return fen;
-  }
-
-  active() {
-    return this.boardObj.active === WHITE ? 'w' : 'b';
-  }
-
-  castling() {
-    let s = ''
-
-    if (this.boardObj.castling[WHITE].king) { s += 'K'; }
-    if (this.boardObj.castling[WHITE].queen) { s += 'Q'; }
-    if (this.boardObj.castling[BLACK].king) { s += 'k'; }
-    if (this.boardObj.castling[BLACK].queen) { s += 'q'; }
-
-    if (!s) { return '-'; }
-    return s;
-  }
-
-  epTarget() {
-    if (this.boardObj.epTarget == null) { return '-'; }
-
-    return eeToAlgebraic(this.boardObj.epTarget);
-  }
-
-  halfMoves() {
-    return this.boardObj.halfMoves;
-  }
-
-  fullMoves() {
-    return this.boardObj.fullMoves;
-  }
-
-  toFen() {
-    return `${this.piecePlacement()} ${this.active()} ${this.castling()} ${this.epTarget()} ${this.halfMoves()} ${this.fullMoves()}`
-  }
-
-}
-
-function eeToAlgebraic(ee) {
-    const file = ee & 7;
-    const rank = ee >> 4;
-    return `${String.fromCharCode(file + 97)}${rank+1}`
-}
-
-function algebraicToEe(alg) {
-    const file = alg[0].charCodeAt() - 97;
-    const rank = parseInt(alg[1], 10) - 1;
-
-    return rank * 16 + file;
-}
-
-  const DIRS = {
-    N: 0x10,
-    S: -0x10,
-    W: -1,
-    E: 1,
-    NE: 0x11,
-    NW: 0x0F,
-    SW: -0x11,
-    SE: -0x0F,
-  }
-
-  const DIR_TO_PIECE = {
+const DIR_TO_PIECE = {
     N: [QUEEN, ROOK],
     S: [QUEEN, ROOK],
     W: [QUEEN, ROOK],
@@ -219,8 +26,6 @@ function algebraicToEe(alg) {
   }
 
 class State {
-
-
   static fromStart() {
     const s = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     return State.fromFen(s);
@@ -257,10 +62,26 @@ class State {
     return s.toFen();
   }
 
+  moves2() {
+    if (!this.__moves) {
+      this.__moves = [];
+      for (let ix = 0; ix < this.pieces.length; ++ix) {
+        const [piece, src] = this.pieces[ix];
+        if (!(piece & this.active)) { continue; }
+
+        const sqMoves = this.movesFromSquare(src);
+        for (let jx = 0; jx < sqMoves.length; ++jx) {
+          if (this.makeMove(sqMoves[jx])) {
+            this.__moves.push(sqMoves[jx]);
+          }
+        }
+      }
+    }
+    return this.__moves;
+  }
 
   moves() {
     if (!this.__moves) {
-      STATS.moves += 1;
       const m = this.pieces.map( ([p, ix]) => this.movesFromSquare(ix) )
 
       this.__moves = [].concat(...m).filter(x => this.makeMove(x)).sort((x,y) => (y.capture ? 1 : 0) - (x.capture?1:0));
@@ -268,27 +89,13 @@ class State {
     return this.__moves;
   }
 
-  perftSplit() {
-    let o = {}
-    let c = 0;
-    this.pieces.forEach( ([p, ix]) => {
-      const mm = this.movesFromSquare(ix).filter(x => this.makeMove(x));
-      if (mm.length) {
-        o[eeToAlgebraic(ix)] = mm.length;
-      }
-      c += mm.length;
-    });
-
-    o['total'] = c;
-
-    return o;
-  }
-
   movesFromSquare(eeIx) {
     const slidingMoves = (dirs) =>  {
 
       let ret = []
-      dirs.forEach(dir => {
+      for (let dx = 0; dx < dirs.length; ++dx ) {
+        const dir = dirs[dx];
+      //dirs.forEach(dir => {
         let tgt = eeIx;
 
         while (!(tgt & 0x88)) {
@@ -301,7 +108,7 @@ class State {
             ret.push({ src: eeIx, dst: tgt });
           }
         }
-      });
+      };
       return ret;
     }
 
@@ -408,28 +215,29 @@ class State {
 
     moveTgts = moveTgts.filter(({dst}) => ( (dst & 0x88) === 0) && !(this.board[dst] & this.active) );
 
-    return moveTgts //moveTgts.map(t => `${eeToAlgebraic(eeIx)}${t}`);
+    return moveTgts;
   }
 
-  makeMoveFromAlg(srcAlg, dstAlg) {
-    const src = algebraicToEe(srcAlg);
-    const dst = algebraicToEe(dstAlg);
+  makeMoveFromAlg(alg) {
+    const move = Moves.fromAlg(alg);
 
-    let possibleMoves = this.movesFromSquare(src);
-    possibleMoves = possibleMoves.filter( m => m.src === src && m.dst === dst );
-    console.log('info', src, dst)
-    console.log('info', possibleMoves);
+    let possibleMoves = this.movesFromSquare(move.src);
+    possibleMoves = possibleMoves.filter( m => m.src === move.src && m.dst === move.dst && m.promotion == move.promotion);
 
-    if (possibleMoves.length === 0) { console.log('info', 'uh oh', srcAlg, dstAlg); return null; }
-
-    //if (possibleMoves.length > 1) { //throw new Error('????', possibleMoves); }
+    if (possibleMoves.length !== 1) { 
+        const candidates = this.movesFromSquare(move.src);
+        const msg = `ERROR: ${alg} has no moves (from ${JSON.stringify(candidates)})`;
+        console.log('info', msg)
+        throw new Error(msg);
+    }
 
     return this.makeMove(possibleMoves[0]);
   }
 
   makeMove(moveObj) {
-    STATS.makeMove += 1;
+    // TODO: -> makeMoveInternal
     // must be pseudo-legal
+    STATS.makeMove += 1;
     const {src, dst, ep, capture, epCapture, castle, promotion} = moveObj;
 
     const newBoard = this.board.slice();
@@ -479,7 +287,70 @@ class State {
   }
 
   isSquareAttacked(square, color) {
+    //STATS.attack += 1; 
+    const t0 = performance.now();
+    const self = this;
+    function canAttack(attacker, src, dst) {
+      const delta = dst - src;
+
+      if (attacker & KNIGHT) {
+        const knightMoves = [0x21, 0x1F, -0x21, -0x1F, 0x12, -0x12, 0x0e, -0x0e];
+        return knightMoves.includes(delta);
+      } else if (attacker & PAWN) {
+        const V = color === WHITE ? -1 : 1;
+        const pawnMoves = [V*DIRS.NW, V*DIRS.NE];
+        return pawnMoves.includes(delta);
+      } else if (attacker & KING) {
+        return Object.values(DIRS).includes(delta);
+      }
+
+      function checkRay(step) {
+        const V = (delta > 0) ? 1 : -1;
+        for (let sq = src + V*step; sq != dst; sq += V*step) {
+          if (self.board[sq]) { return false; }
+        }
+        return true;
+      }
+
+      if (((attacker & QUEEN) || (attacker & ROOK)) && (-7 <= delta && delta <= 7)) {
+        // rank
+        return checkRay(1);
+      }
+
+      if (((attacker & QUEEN) || (attacker & ROOK)) && delta % 16 === 0) {
+        // file
+        return checkRay(16);
+      }
+
+      if (((attacker & QUEEN) || (attacker & BISHOP)) && delta % 15 === 0) {
+        // anti-diagonal
+        return checkRay(15);
+      }
+      if (((attacker & QUEEN) || (attacker & BISHOP)) && delta % 17 === 0) {
+        // diagonal
+        return checkRay(17);
+      }
+
+    }
+
+    for (let ix = 0; ix < this.pieces.length; ++ix) {
+      const [attacker, src] = this.pieces[ix];
+
+      if (attacker & color) { continue; }
+     
+      if (canAttack(attacker & COLORLESS_MASK, src, square)) {
+      //STATS.attack_t += performance.now() - t0; 
+        return true;
+      }
+    }
+    //STATS.attack_t += performance.now() - t0; 
+    return false;
+  }
+
+  isSquareAttacked1(square, color) {
+    // TODO: test iterating over enemy pieces, checking for attackables
     // pawn
+    function fffff () {
     const V = color === WHITE ? 1 : -1;
     const pawnMoves = [V*DIRS.NW, V*DIRS.NE];
     const rp = pawnMoves.find(d => {
@@ -534,6 +405,13 @@ class State {
       });
 
     return r1;
+    }
+
+    STATS.attack += 1; 
+    const t0 = performance.now();
+    const ret = fffff.bind(this)();
+    STATS.attack_t += performance.now() - t0;
+    return ret;
 
   }
 
@@ -547,7 +425,7 @@ class State {
 
     this.pieces.forEach(([piece, ix]) => {
       const V = (WHITE & piece) ? 1 : -1;
-      s += V*(T[(piece&0x3F)] || 0);
+      s += V*(T[(piece&COLORLESS_MASK)] || 0);
     });
     return s;
   }
@@ -558,31 +436,26 @@ class State {
 
   bestMove(depth=5) {
     CCC = 0;
-    let {value, best} = abSearch(this, depth, -999, 999, this.active === WHITE, []);
+    let {value, best} = abSearch(depth, this, depth, -999, 999, this.active === WHITE, []);
     console.log('info nodes:', CCC);
+    console.log('info value:', value);
+    console.log(`info depth ${depth} nodes ${CCC} score cp ${100*value}`)
     let m = best[0];
     //console.log(value, eeToAlgebraic(m.src), eeToAlgebraic(m.dst), m);
 
-    return moveToAlgebraic(m);
+    return Moves.toAlg(m);
     //return m, best;
   }
 
 };
 
-function moveToAlgebraic(m){
-    const promo = {
-      0x10: 'q',
-      0x04: 'n',
-      0x02: 'b',
-      0x08: 'r',
-    };
-    return `${eeToAlgebraic(m.src)}${eeToAlgebraic(m.dst)}${promo[m.promotion & 0x3F] || ''}`;
-}
-
 var CCC = 0;
 
-function abSearch(node, depth, alpha, beta, isMax, pv) {
+function abSearch(maxD, node, depth, alpha, beta, isMax, pv) {
   CCC += 1;
+  if (CCC % 10_000 === 0) {
+    console.log(`info depth ${maxD - depth} nodes ${CCC}`)
+  }
   if (depth === 0 || node.moves().length === 0) { 
     const ee = node.evaluate();
     return {value: ee, best: pv };
@@ -595,7 +468,7 @@ function abSearch(node, depth, alpha, beta, isMax, pv) {
     for (let ix = 0; ix < moves.length; ++ix) {
       const move = moves[ix];
       const child = node.makeMove(move);
-      const rslt = abSearch(child, depth-1, alpha, beta, false, [...pv, move]);
+      const rslt = abSearch(maxD, child, depth-1, alpha, beta, false, [...pv, move]);
       if (rslt.value > value) {
         value = rslt.value;
         best = rslt.best;
@@ -612,7 +485,7 @@ function abSearch(node, depth, alpha, beta, isMax, pv) {
     for (let ix = 0; ix < moves.length; ++ix) {
       const move = moves[ix];
       const child = node.makeMove(move);
-      const rslt = abSearch(child, depth-1, alpha, beta, true, [...pv, move]);
+      const rslt = abSearch(maxD, child, depth-1, alpha, beta, true, [...pv, move]);
       if (rslt.value < value) {
         value = rslt.value;
         best = rslt.best;
@@ -625,37 +498,13 @@ function abSearch(node, depth, alpha, beta, isMax, pv) {
   }
 }
 
-let v = State.fromStart();
+//let v = State.fromStart();
+//console.log(v.bestMove(5));
 //v = State.fromFen('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1');
 //v = State.fromFen('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -  1 1');
 //v = State.fromFen('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8');  
 //v = State.fromFen('r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1');
 
-
-function perft(init, maxDepth) {
-  let C = {captures: 0, ep: 0, checks: 0, checkmates: 0, castles: 0, promotions: 0}
-  function fff(v, lastMove, maxDepth=1, depth=0) {
-    if (depth == maxDepth) { 
-      if (v.isCheckmate()) { C.checkmates += 1; } 
-      if (v.isCheck()) { C.checks += 1; } 
-      if (lastMove.capture) { C.captures += 1; }
-      if (lastMove.epCapture) { C.ep += 1; }
-      if (lastMove.castle) { C.castles += 1; }
-      if (lastMove.promotion) { C.promotions += 1; }
-      return 1; }
-
-    const moves = v.moves();
-    let t = 0;
-    moves.forEach( move => {
-      const child = v.makeMove(move);
-      var x = fff(child, move, maxDepth, depth+1);
-      // if (depth === 0) { console.log(eeToAlgebraic(m.src), eeToAlgebraic(m.dst), x); }
-      t += x;
-    });
-    return t;
-  }
-  return [fff(init, {}, maxDepth, 0), C];
-}
 
 /*
 console.log(v);
@@ -673,6 +522,4 @@ pv.forEach(m => {
 });
 }*/
 
-if (typeof module !== 'undefined') {
-  module.exports = { State };
-}
+export { State, STATS };

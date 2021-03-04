@@ -1,6 +1,8 @@
-const readline = require('readline');
+// const readline = require('readline');
 
-const {State} = require('./main.js');
+import readline from 'readline';
+import { State } from './main.js';
+// const {State} = require('./main.js');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -11,7 +13,7 @@ const it = rl[Symbol.asyncIterator]();
 
 async function read() {
     const line = await it.next();
-    console.log('info', 'got', '"', line.value, '"');
+    // console.log('info', 'got', '"', line.value, '"');
     return line.value;
 }
 
@@ -24,6 +26,7 @@ function uci() {
 let G;
 async function main() {
 
+    try {
     while (true) {
         let line = await read();
 
@@ -38,7 +41,7 @@ async function main() {
         } else if (line.startsWith('position')) {
             let ll = line.split(' ');
             let d = ll[ll.length-1];
-            G = G.makeMoveFromAlg(d.slice(0,2), d.slice(2,4));
+            G = G.makeMoveFromAlg(d);
         } else if (line.startsWith('go')) {
             const [g, wtime, wt, btime, bt, movestogo, moves] = line.split(' ');
             const tStr = G.active === 0x40 ? wt : bt;
@@ -51,15 +54,17 @@ async function main() {
             } else {
                 d = 6;
             }
-            console.log('info d', avg, d);
-
             let m = G.bestMove(d);
-            G = G.makeMoveFromAlg(m.slice(0,2), m.slice(2,4));
             console.log('bestmove', m);
+            G = G.makeMoveFromAlg(m);
         } else if (line === 'quit') {
             return;
         }
     }
+} catch (e) {
+    console.log('info ERROR')
+    console.log('info ERROR ' + e)
+}
 }
 
 main()

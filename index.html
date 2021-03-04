@@ -1,6 +1,6 @@
 <html>
     <head>
-    <script src='main.js'></script>
+    <script type="module" src='main.js'></script>
 
     <script src='node_modules/jquery/dist/jquery.min.js'></script>
     <script src='node_modules/@chrisoakman/chessboardjs/dist/chessboard-1.0.0.min.js'></script>
@@ -15,10 +15,11 @@
 <label>FEN:</label>
 <div id="fen"></div>
 
-    <script>
-
+    <script type="module">
+        import { State } from './main.js'
         var board = null
         var game = State.fromStart();
+        var moveColor = 'White'
         var $status = $('#status')
         var $fen = $('#fen')
 
@@ -32,12 +33,16 @@
 
         function onDrop (source, target) {
         // see if the move is legal
-        var move = game.makeMoveFromAlg(source, target);
+        try {
+        var newGame = game.makeMoveFromAlg(source + target);
+        } catch (e) {
+            return 'snapback';
+        }
 
         // illegal move
-        if (move === null) return 'snapback'
+        if (newGame === null) return 'snapback'
 
-        game = move;
+        game = newGame;
 
         updateStatus()
         }
@@ -45,15 +50,22 @@
         // update the board position after the piece snap
         // for castling, en passant, pawn promotion
         function onSnapEnd () {
+            if (moveColor === 'Black') {
+                const m = game.bestMove(5);
+                console.log(m)
+                game = game.makeMoveFromAlg(m);
+                updateStatus();
+            }
             board.position(game.toFen())
         }
 
         function updateStatus () {
             var status = ''
 
-            var moveColor = 'White'
             if (game.active === 0x80) {
                 moveColor = 'Black'
+            } else {
+                moveColor = 'White'
             }
 
             status = moveColor + ' to move'
@@ -73,13 +85,7 @@
             $status.html(status)
             $fen.html(game.toFen())
 
-            if (moveColor === 'Black') {
-                setTimeout(function() {
-                const [m, mmmm] = game.bestMove();
-                game = game.makeMove(m);
-                updateStatus();
-                }, 1);
-            }
+
         }
 
         var config = {

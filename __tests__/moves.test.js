@@ -1,6 +1,4 @@
-const { expect } = require('@jest/globals');
-const Moves = require('../moves');
-
+import Moves from '../moves';
 
 const moveCases = [
     [ {src: 0, dst: 32 }, 'a1a3'],

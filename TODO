@@ -1,18 +1,60 @@
-accept/produce proper move format
 
-uci option for search depth
-uci info for nodes, eval, depth
+[ ] commit and tag open changes
+[ ] result registry
 
-time mgmt in engine
-iterative deepening for search
-transposition table for search
-async search
-opening book
+testing
+[ ] compare win-at-chess positions: prescribed best move vs. engine computed
+[ ] expand perf suite
+    more positions
+    method focused (e.g. 1000x makeMove)
 
-clean front-end
-split up main.js
-    move gen
-    fen parsing
+performance
+[ ] incrementally updated piece map?
+[ ] attack maps?
 
-repeated Nc3, Rb1, Ra1, Rb1 as white?
+eval
+[ ] shannon's eval
+    [ ] passed, doubled, isolated pawns in eval
+    [ ] mobility in eval
 
+search
+[ ] iterative deepening for search
+[ ] transposition table for search
+[ ] async search
+[ ] opening book
+[ ] repeated Nc3, Rb1, Ra1, Rb1 as white?
+[ ] time mgmt in engine
+[ ] fancy: only terminate on quiet positions?
+
+interface
+[ ] report options
+[ ] uci option for search depth
+[ ] uci info for nodes, eval, depth
+[ ] all other uci commands
+
+front end
+[ ] bundle for front-end
+[ ] clean front-end
+[ ] split up main.js
+    [ ] move gen
+    [x] fen parsing
+
+done 
+[x] piece-focused isattacked faster?
+[x] accept/produce proper move format
+
+
+
+
+
+
+
+abSearch    500
+    moves   310
+        movesFromSquare 38
+        makeMove 207
+    makeMove  90
+        self 33
+        ischeck 51
+        state 3
+recurse  70

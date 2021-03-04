@@ -46,7 +46,7 @@ function algebraicToEe(alg) {
 }
 
 
-module.exports = {
+export default {
     toAlg,
     fromAlg,
     eeToAlgebraic, 
