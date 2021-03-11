@@ -19,6 +19,7 @@ eval
 
 search
 [ ] iterative deepening for search
+[ ] zobrist hashing for transposition table
 [ ] transposition table for search
 [ ] async search
 [ ] opening book

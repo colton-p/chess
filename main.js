@@ -421,13 +421,34 @@ class State {
   evaluate() {
     let s = 0;
     const T = {1: 1, 2: 3, 4: 3, 8: 5, 16: 9, 32: 100};
-    if (this.isCheckmate()) { return ((this.active === WHITE) ? -1 : 1)*99; }
+    const K = (this.active === WHITE) ? 1 : -1;
+    if (this.isCheckmate()) { return -K*99; }
 
     this.pieces.forEach(([piece, ix]) => {
       const V = (WHITE & piece) ? 1 : -1;
       s += V*(T[(piece&COLORLESS_MASK)] || 0);
     });
-    return s;
+
+    let whitePawns = [0, 0, 0, 0, 0, 0, 0, 0];
+    let blackPawns = [0, 0, 0, 0, 0, 0, 0, 0];
+    this.pieces.forEach( ([p, ix]) => {
+      if (!(p & PAWN)) { return; }
+      const file = ix & 0x07;
+      if (p & WHITE) { whitePawns[file] += 1; }
+      else if (p & BLACK) { blackPawns[file] += 1; }
+    });
+
+    const whiteDouble = whitePawns.filter(v => (v >= 2)).length;
+    const blackDouble = blackPawns.filter(v => (v >= 2)).length;
+
+    const whiteIso = whitePawns.filter( (v, ix) => {
+      return v && (ix > 0 && whitePawns[ix-1] == 0) && (ix < 7 && whitePawns[ix+1] == 0);
+    }).length;
+    const blackIso = blackPawns.filter( (v, ix) => {
+      return v && (ix > 0 && blackPawns[ix-1] == 0) && (ix < 7 && blackPawns[ix+1] == 0);
+    }).length;
+
+    return s - 0.5*(whiteDouble - blackDouble) - 0.5 * (whiteIso - blackIso);
   }
 
   perft(depth=2) {

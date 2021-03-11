@@ -18,7 +18,7 @@
     <script type="module">
         import { State } from './main.js'
         var board = null
-        var game = State.fromStart();
+        window.game = State.fromStart();
         var moveColor = 'White'
         var $status = $('#status')
         var $fen = $('#fen')
