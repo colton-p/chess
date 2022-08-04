@@ -1,5 +1,16 @@
-const { State } = require('../main');
+import { describe, expect, test } from '@jest/globals';
+import { State, STATS } from '../main';
+import { performance } from 'perf_hooks';
 
+test.only('go', () => {
+    const g = State.fromStart();
+
+    const t0 = performance.now();
+    const r = g.bestMove(5);
+    console.log(performance.now() - t0);
+    console.log(r);
+    console.log(STATS)
+})
 
 test('20 moves from initial', () => {
     const g = State.fromStart();

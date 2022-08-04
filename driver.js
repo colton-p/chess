@@ -49,10 +49,11 @@ async function main() {
             const avg = t / parseInt(moves, 10);
 
             let d;
-            if (avg < 5_000 || t < 30_000) {
+            //if (avg < 5_000 || t < 30_000) {
+            if (t < 5_000) {
                 d = 4;
             } else {
-                d = 6;
+                d = 8;
             }
             let m = G.bestMove(d);
             console.log('bestmove', m);

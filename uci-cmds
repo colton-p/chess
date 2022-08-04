@@ -1,0 +1,8 @@
+uci
+isready
+ucinewgame
+position startpos
+position startpos moves e2e4
+isready
+go wtime 9431 btime 10000 movestogo 40
+position startpos moves e2e4 a7a5 d2d4

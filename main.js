@@ -3,6 +3,7 @@ import { PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING, WHITE, BLACK, DIRS, COLORLESS_
 import { FenParser, FenSerializer } from './fen_parser.js';
 import Moves from './moves.js';
 import perft from './perft.js'
+import zhash from './zobrist.js';
 
 //import { performance } from 'perf_hooks';
 
@@ -60,6 +61,10 @@ class State {
   toFen(){
     const s = new FenSerializer(this)
     return s.toFen();
+  }
+
+  zhash() {
+    return zhash(this.board);
   }
 
   moves2() {
@@ -454,15 +459,24 @@ class State {
   perft(depth=2) {
     return perft(this, depth);
   }
+  bestMove2(depth=5) {
+    let {value, best} = abSearch(depth, this, depth, -999, 999, this.active === WHITE, []);
+
+    return best.map( m => Moves.toAlg(m) );
+  }
 
   bestMove(depth=5) {
     CCC = 0;
+    T = {};
+    D = {};
     let {value, best} = abSearch(depth, this, depth, -999, 999, this.active === WHITE, []);
-    console.log('info nodes:', CCC);
-    console.log('info value:', value);
-    console.log(`info depth ${depth} nodes ${CCC} score cp ${100*value}`)
+    //console.log('info nodes:', CCC);
+    // console.log('info value:', value);
+    // console.log(`info depth ${depth} nodes ${CCC} score cp ${100*value}`)
     let m = best[0];
     //console.log(value, eeToAlgebraic(m.src), eeToAlgebraic(m.dst), m);
+    //console.log('T', Object.keys(T).length);
+    //console.log('info stats', STATS)
 
     return Moves.toAlg(m);
     //return m, best;
@@ -472,10 +486,14 @@ class State {
 
 var CCC = 0;
 
+var T = {};
+var D = {};
+
 function abSearch(maxD, node, depth, alpha, beta, isMax, pv) {
   CCC += 1;
+  STATS.ab += 1;
   if (CCC % 10_000 === 0) {
-    console.log(`info depth ${maxD - depth} nodes ${CCC}`)
+   // console.log(`info depth ${maxD - depth} nodes ${CCC}`)
   }
   if (depth === 0 || node.moves().length === 0) { 
     const ee = node.evaluate();
@@ -489,7 +507,13 @@ function abSearch(maxD, node, depth, alpha, beta, isMax, pv) {
     for (let ix = 0; ix < moves.length; ++ix) {
       const move = moves[ix];
       const child = node.makeMove(move);
+
+      const zh = child.zhash();
+      if (T[zh] && D[zh] >= depth-1) { STATS.hits += 1; return T[zh]; }
+      STATS.misses += 1;
       const rslt = abSearch(maxD, child, depth-1, alpha, beta, false, [...pv, move]);
+      //T[zh] = rslt;
+      //D[zh] = depth-1;
       if (rslt.value > value) {
         value = rslt.value;
         best = rslt.best;
@@ -506,7 +530,13 @@ function abSearch(maxD, node, depth, alpha, beta, isMax, pv) {
     for (let ix = 0; ix < moves.length; ++ix) {
       const move = moves[ix];
       const child = node.makeMove(move);
+
+      const zh = child.zhash();
+      if (T[zh] && D[zh] >= depth-1) { STATS.hits += 1; return T[zh]; }
+      STATS.misses += 1;
       const rslt = abSearch(maxD, child, depth-1, alpha, beta, true, [...pv, move]);
+      //T[zh] = rslt;
+      //D[zh] = depth-1;
       if (rslt.value < value) {
         value = rslt.value;
         best = rslt.best;
