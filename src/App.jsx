@@ -57,7 +57,7 @@ function App() {
     setTimeout(() => {
       const bestMove = game.bestMove();
       const newGame = game.makeMoveFromAlg(bestMove);
-
+      api.move(bestMove.slice(0, 2), bestMove.slice(2, 4));
       setGame(newGame)
       setThinking(false);
     }, 250);
