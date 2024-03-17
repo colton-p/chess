@@ -32,13 +32,13 @@ function fromAlg(alg) {
 
 }
 
-function eeToAlgebraic(ee) {
+export function eeToAlgebraic(ee) {
     const file = ee & 7;
     const rank = ee >> 4;
     return `${String.fromCharCode(file + 97)}${rank+1}`
 }
 
-function algebraicToEe(alg) {
+export function algebraicToEe(alg) {
     const file = alg[0].charCodeAt() - 97;
     const rank = parseInt(alg[1], 10) - 1;
 

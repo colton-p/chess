@@ -1,0 +1,106 @@
+<html>
+    <head>
+    <script type="module" src='main.js'></script>
+
+    <script src='node_modules/jquery/dist/jquery.min.js'></script>
+    <script src='node_modules/@chrisoakman/chessboardjs/dist/chessboard-1.0.0.min.js'></script>
+    <link rel="stylesheet" href='node_modules/@chrisoakman/chessboardjs/dist/chessboard-1.0.0.min.css'></link>
+    </head>
+
+    <body>
+
+    <div id="myBoard" style="width: 400px"></div>
+<label>Status:</label>
+<div id="status"></div>
+<label>FEN:</label>
+<div id="fen"></div>
+
+    <script type="module">
+        import { State } from './main.js'
+        var board = null
+        window.board = board;
+        window.game = State.fromStart();
+        var moveColor = 'White'
+        var $status = $('#status')
+        var $fen = $('#fen')
+
+        function onDragStart (source, piece, position, orientation) {
+        // only pick up pieces for the side to move
+            if ((game.active === 0x40 && piece.search(/^b/) !== -1) ||
+                (game.active === 0x80 && piece.search(/^w/) !== -1)) {
+                return false
+            }
+        }
+
+        function onDrop (source, target) {
+        // see if the move is legal
+        try {
+        var newGame = game.makeMoveFromAlg(source + target);
+        } catch (e) {
+            return 'snapback';
+        }
+
+        // illegal move
+        if (newGame === null) return 'snapback'
+
+        game = newGame;
+
+        updateStatus()
+        }
+
+        // update the board position after the piece snap
+        // for castling, en passant, pawn promotion
+        function onSnapEnd () {
+            if (moveColor === 'Black') {
+                const m = game.bestMove(5);
+                console.log(m)
+                game = game.makeMoveFromAlg(m);
+                updateStatus();
+            }
+            board.position(game.toFen())
+        }
+
+        function updateStatus () {
+            var status = ''
+
+            if (game.active === 0x80) {
+                moveColor = 'Black'
+            } else {
+                moveColor = 'White'
+            }
+
+            status = moveColor + ' to move'
+
+            if (game.isCheck()) {
+                status += ', check';
+            }
+
+            if (game.isCheckmate()) {
+                status += ', mate';
+            }
+
+            if (game.isStalemate()) {
+                status += ', stalemate'
+            }
+
+            $status.html(status)
+            $fen.html(game.toFen())
+
+
+        }
+
+        var config = {
+            draggable: true,
+            pieceTheme: 'img/{piece}.png',
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+        }
+        board = Chessboard('myBoard', config)
+
+        updateStatus()
+    </script>
+    </body>
+</html>
+
